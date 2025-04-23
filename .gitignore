@@ -1,0 +1,4 @@
+*.exe
+output.asm
+.vscode/launch.json
+.vscode/tasks.json
