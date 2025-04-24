@@ -39,6 +39,6 @@ void print_ast(AST_Node *node);
 void print_subtree(AST_Node *node, const char *prefix, int is_left);
 
 void asm_write(AST_Node *ast);
-int asm_gen(FILE *output_file, AST_Node *node);
+void asm_gen(FILE *output_file, AST_Node *node);
 
 #endif

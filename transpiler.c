@@ -1,4 +1,4 @@
-#include  "transpiler.h"
+#include "transpiler.h"
 
 int parse(Token **tokens)
 {
@@ -54,6 +54,7 @@ int parse(Token **tokens)
                 break;
             default:
                 fprintf(stderr, "Error: Unknown character '%c'!\n", lookup);
+                free(*tokens);
                 exit(EXIT_FAILURE);
             }
         }
@@ -65,7 +66,7 @@ int parse(Token **tokens)
         if (!temp)
         {
             perror("Allocation error in parse function");
-            free(tokens);
+            free(*tokens);
             exit(EXIT_FAILURE);
         }
         *tokens = temp;
@@ -268,7 +269,8 @@ void print_subtree(AST_Node *node, const char *prefix, int is_left)
 void asm_write(AST_Node *ast)
 {
     FILE *output_file = fopen("output.asm", "w");
-    if (output_file == NULL) {
+    if (output_file == NULL)
+    {
         perror("Error writing to output file");
         fclose(output_file);
         tree_destroy(ast);
@@ -278,27 +280,27 @@ void asm_write(AST_Node *ast)
     fprintf(output_file, "%%include \"macros.asm\"\n");
 
     fprintf(output_file, "section .text\n");
-    fprintf(output_file, "    global _start\n");
+    fprintf(output_file, "\tglobal _start\n");
     fprintf(output_file, "_start:\n");
 
     asm_gen(output_file, ast);
 
-    fprintf(output_file, "    toStr\n");
-    fprintf(output_file, "    mov rsi, buf2\n");
-    fprintf(output_file, "    print\n");
+    fprintf(output_file, "\ttoStr\n");
+    fprintf(output_file, "\tmov rsi, buf2\n");
+    fprintf(output_file, "\tprint\n");
 
-    fprintf(output_file, "    mov rax, 60\n");
-    fprintf(output_file, "    xor rdi, rdi\n");
-    fprintf(output_file, "    syscall\n");
+    fprintf(output_file, "\tmov rax, 60\n");
+    fprintf(output_file, "\txor rdi, rdi\n");
+    fprintf(output_file, "\tsyscall\n");
 
     fprintf(output_file, "section .bss\n");
-    fprintf(output_file, "    buf:    resb 21\n");
-    fprintf(output_file, "    buf2:   resb 21\n");
-    
+    fprintf(output_file, "\tbuf:    resb 21\n");
+    fprintf(output_file, "\tbuf2:   resb 21\n");
+
     fclose(output_file);
 }
 
-int asm_gen(FILE *output_file, AST_Node *node)
+void asm_gen(FILE *output_file, AST_Node *node)
 {
     if (node->token.type == TOKEN_NUMBER)
     {
@@ -332,29 +334,32 @@ int asm_gen(FILE *output_file, AST_Node *node)
             break;
         }
     }
-    return 0;
 }
 
-void exec() {
+void exec()
+{
     int err;
     err = system("nasm -f elf64 output.asm -o output.o");
-    if (err) {
+    if (err)
+    {
         fprintf(stderr, "Error: missing output.asm file\n");
         exit(EXIT_FAILURE);
     }
 
     err = system("ld output.o -o output");
-    if (err) {
+    if (err)
+    {
         fprintf(stderr, "Error: missing output.o file\n");
         exit(EXIT_FAILURE);
     }
 
     err = system("./output");
-    if (err) {
+    if (err)
+    {
         fprintf(stderr, "Error: can't execute file\n");
         exit(EXIT_FAILURE);
     }
-    
+
     printf("\n");
 }
 
@@ -363,12 +368,13 @@ int main()
     int len;
 
     Token *tokens = NULL;
-   
+
     len = parse(&tokens);
     if (len == 0)
     {
         fprintf(stderr, "Error: Empty expression\n");
-        exit(EXIT_FAILURE);
+        free(tokens);
+        return 1;
     }
 
     int pos = 0;
